@@ -1,0 +1,10 @@
+#!/bin/bash -eu
+
+case "$1" in
+  -v|--version)
+    version="$2"
+esac
+
+# The setup script must be reentrant. 
+# OpenShift Enterprise runs the script for every upgrade that is not backward compatible. 
+# Add logic you want to run only once to the install script, not the setup script.
