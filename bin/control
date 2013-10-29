@@ -9,6 +9,7 @@ function isBpmsBaseInstalled() {
         echo "Please install BPMS Base cartridge prior to installing this BPMS HA Cartridge"
         return 1
     fi
+    echo "Nice:  BPMS Base cartridge prior is installed in this application"
     return 0
 }
 
