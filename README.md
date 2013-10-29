@@ -1,6 +1,6 @@
 ===================================
 examples:
 
-rhc add-cartridge -a bpmsbase "http://cartreflect-claytondev.rhcloud.com/reflect?github=jbride/openshift-addon-template&commit=master"
+rhc -v add-cartridge -a bpmsbase "http://cartreflect-claytondev.rhcloud.com/reflect?github=jbride/openshift-addon-bpms-ha&commit=master"
 
-rhc cartridge remove -a bpmsbase -c rhtgpe-exserver-5.8
+rhc cartridge remove -a bpmsbase -c rhtgpe-bpmsha-5.8

@@ -1,6 +1,6 @@
-Name: exserver
-Cartridge-Short-Name: EXSERVER
-Display-Name: BPMS Execution Server
+Name: bpmsha
+Cartridge-Short-Name: BPMSHA
+Display-Name: BPMS HA Server
 Description: ""
 Version: '6.0'
 License: Apache
@@ -16,7 +16,7 @@ Website: http://www.redhat.com
 Help-Topics:
   "Developer Center": https://www.openshift.com/developers
 Cart-Data:
-  - Key: OPENSHIFT_EXSERVER_LOG_DIR
+  - Key: OPENSHIFT_BPMSHA_LOG_DIR
     Type: environment
     Description: "Directory to store application log files."
   - Key: OPENSHIFT_TMP_DIR
@@ -41,9 +41,9 @@ Cart-Data:
     Type: environment
     Description: "Unique ID which identified the gear. This value changes between gears."
 Provides:
-  - "exserver"
-  - "exserver(version) = 6.0"
-  - "exserver(version) >= 6.0"
+  - "bpmsha"
+  - "bpmsha(version) = 6.0"
+  - "bpmsha(version) >= 6.0"
 Publishes:
 Scaling:
   Min: 1

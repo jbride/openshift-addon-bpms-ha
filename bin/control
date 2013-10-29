@@ -1,20 +1,29 @@
 #!/bin/bash -e
 
-source $OPENSHIFT_CARTRIDGE_SDK_BASH
-
-EXSERVER_BIN_DIR=${OPENSHIFT_EXSERVER_DIR}/bin
-
-cartridge_type="exserver"
+cartridge_type="bpmsha"
 version=6.0
 
+# check prior installation of BPMS Base cartridge
+function isBpmsBaseInstalled() {
+    if [  "x${OPENSHIFT_BPMS_VERSION}" = "x" ]; then
+        echo "Please install BPMS Base cartridge prior to installing this BPMS HA Cartridge"
+        return 1
+    fi
+    return 0
+}
+
 # Check if the server http port is up
-function ishttpup() {
+function isdbup() {
+    if [  "x${OPENSHIFT_MYSQL_DB_HOST}" = "x" ]; then
+        echo "Unable to locate the following env variable:  OPENSHIFT_MYSQL_DB_HOST.  Please install MYSQL cartridge prior to installing this BPMS HA Cartridge"
+        return 1
+    fi
 
     let count=0
     while [ ${count} -lt 24 ]
     do
-        if /usr/sbin/lsof -P -n -i "@${OPENSHIFT_EXSERVER_IP}:${OPENSHIFT_EXSERVER_HTTP_PORT}" | grep "(LISTEN)" > /dev/null; then
-            echo "Found ${OPENSHIFT_EXSERVER_IP}:${OPENSHIFT_EXSERVER_HTTP_PORT} listening port"
+        if /usr/sbin/lsof -P -n -i "@${OPENSHIFT_MYSQL_DB_HOST}:${OPENSHIFT_MYSQL_DB_PORT}" | grep "(LISTEN)" > /dev/null; then
+            echo "Found ${OPENSHIFT_MYSQL_DB_HOST}:${OPENSHIFT_MYSQL_DB_PORT} listening port"
             return 0
         fi
         let count=${count}+1
@@ -26,63 +35,56 @@ function ishttpup() {
 }
 
 function build() {
-  echo "Building Execution Server"
+  echo "Building BPMS HA Server"
 
 }
 
 function deploy() {
-  echo "Deploying Execution Server"
+  echo "Deploying BPMS HA Server"
   
 }
 
 function copy_conf() {
-	# Create a link for each file in user config to server standalone/config
-	if [ -d ${OPENSHIFT_REPO_DIR}.openshift/config ]
-	then
-	  for f in ${OPENSHIFT_REPO_DIR}.openshift/config/*
-	  do
-	    target=$(basename $f)
-	    # Remove any target that is being overwritten
-	    if [ -e "${OPENSHIFT_EXSERVER_DIR}/conf/$target" ]
-	    then
-	       echo "Removing existing $target"
-	       rm -rf "${OPENSHIFT_EXSERVER_DIR}/conf/$target"
-	       cp ${OPENSHIFT_REPO_DIR}.openshift/config/$target ${OPENSHIFT_EXSERVER_DIR}/conf
-	    fi
-	  done
-	else
-		cp ${OPENSHIFT_EXSERVER_DIR}/versions/${version}/conf/* ${OPENSHIFT_EXSERVER_DIR}/conf
-	fi
+    # copy any project CLI files to filtered directory
+    mkdir -p ${OPENSHIFT_BPMSHA_DIR}/filtered
+    cp ${OPENSHIFT_BPMSHA_DIR}/versions/${version}/conf/* ${OPENSHIFT_BPMSHA_DIR}/filtered
 }
 
 function replace_envs() {
-	for f in ${OPENSHIFT_EXSERVER_DIR}/conf/*.xml
-	do
-		sed -i -e "s/\${env.OPENSHIFT_EXSERVER_IP}/$OPENSHIFT_EXSERVER_IP/g" \
-			$f
-	done
+    # filter of substitution variables for various config files
+    # note the use of different delimiters for sed since some data (ie:  path variables) include special characters that conflict with delimiter
+    for f in ${OPENSHIFT_BPMSHA_DIR}/filtered/*.*
+    do
+        sed -i -e "s/\${env.OPENSHIFT_JBOSSEAP_IP}/$OPENSHIFT_JBOSSEAP_IP/g" $f
+        sed -i -e "s/\${env.OPENSHIFT_MYSQL_DB_HOST}/$OPENSHIFT_MYSQL_DB_HOST/g" $f
+        sed -i -e "s/\${env.OPENSHIFT_MYSQL_DB_PORT}/$OPENSHIFT_MYSQL_DB_PORT/g" $f
+        sed -i -e "s/\${env.OPENSHIFT_MYSQL_DB_USERNAME}/$OPENSHIFT_MYSQL_DB_USERNAME/g" $f
+        sed -i -e "s/\${env.OPENSHIFT_MYSQL_DB_PASSWORD}/$OPENSHIFT_MYSQL_DB_PASSWORD/g" $f
+        sed -i -e "s/\${org.jboss.processFlow.bam.queue}/processFlow.asyncWorkingMemoryLogger/g" $f
+        sed -i -e "s@\${env.deployDir}@$OPENSHIFT_BPMSHA_DIR/versions/$version/deployments@" $f
+        sed -i -e "s@\${env.kieDir}@$OPENSHIFT_DATA_DIR/kieFilesystem@" $f
+    done
 }
 
 function start() {
-  echo "Starting $cartridge_type cart"
+    isBpmsBaseInstalled
+    echo "Starting $cartridge_type cart"
+    #copy_conf
   
-  #copy_conf
-  
-  #replace_envs
-    
+    #replace_envs
 }
 
 
 function stop() {
-  	echo "Stopping $cartridge_type cart"
+      echo "Stopping $cartridge_type cart"
 }
 
 function restart() {
     echo "Restarting $cartridge_type cart"
    
-  	stop
-  	
-  	start
+      stop
+      
+      start
 }
 
 function status() {
@@ -101,40 +103,19 @@ function reload() {
 
 # Clean up any log files
 function tidy() {
-  client_message "Emptying log dir: $OPENSHIFT_EXSERVER_LOG_DIR"
+  client_message "Emptying log dir: $OPENSHIFT_BPMSHA_LOG_DIR"
   shopt -s dotglob
-  rm -rf $OPENSHIFT_EXSERVER_LOG_DIR/*
-}
-
-function threaddump() {
-	echo "Thread dump for $cartridge_type cart"
-	
-    if ! isrunning; then
-        echo "Application is stopped"
-        exit 1
-    elif [ -f "$EXSERVER_PID_FILE" ]; then
-        pid=$(cat $EXSERVER_PID_FILE);
-        java_pid=$(ps h --ppid $pid -o '%p')
-        kill -3 $java_pid
-        client_result "Success"
-        client_result ""
-        client_result "The thread dump file will be available via: rhc tail $OPENSHIFT_APP_NAME -f */logs/server.log -o '-n 250'"
-    else 
-        echo "Failed to locate JBOSS PID File"
-    fi
+  rm -rf $OPENSHIFT_BPMSHA_LOG_DIR/*
 }
 
 case "$1" in
-  build)		build ;;
-  deploy)	    deploy ;;
-  start)     	start ;;
-  stop)      	stop ;;
-  restart)   	restart ;;
-  status)    	status ;;
-  reload)    	reload ;;
-  tidy)      	tidy ;;
-  threaddump)   threaddump ;;
-  *)         	exit 0
+    isdbup|build|deploy|start|stop|restart|status|reload|tidy|replace_envs|printBpmsHARestCalls)
+        $1
+        ;;
+    *)
+
+    echo $"Usage: $0 {isdbup|build|deploy|start|stop|restart|status|reload|tidy|replace_envs|printBpmsHARestCalls}"
+    exit 1
 esac
 
 
