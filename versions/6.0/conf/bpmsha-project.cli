@@ -4,3 +4,6 @@ if (outcome != success) of /subsystem=datasources/data-source=jbpm-bam-cp:read-a
     /subsystem=datasources/data-source=jbpm-bam-cp/:write-attribute(name=new-connection-sql,value="select 1")
     /subsystem=datasources/data-source=jbpm-bam-cp:enable()
 end-if
+
+# deployment
+deploy ${env.deployDir}/asyncAuditLog.jar --force

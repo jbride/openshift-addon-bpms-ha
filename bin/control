@@ -86,6 +86,14 @@ function start() {
     # 1)  create jbpm_bam database if doesn't already exist
     #     NOTE:  not sure why can't connect to mysql host while in this start block without having to specify host details
     mysql -u $OPENSHIFT_MYSQL_DB_USERNAME -p mysql -h $OPENSHIFT_MYSQL_DB_HOST -p$OPENSHIFT_MYSQL_DB_PASSWORD < $OPENSHIFT_EXSERVER_DIR/filtered/bpmshaserver.sql
+
+    # 2) customize base jboss / bpms runtime by executing bpms ha messaging cli
+    $OPENSHIFT_JBOSSEAP_DIR/bin/tools/jboss-cli.sh --connect --controller=$OPENSHIFT_JBOSSEAP_IP:$OPENSHIFT_JBOSSEAP_MANAGEMENT_NATIVE_PORT -c --file=$OPENSHIFT_BPMSHA_DIR/filtered/messaging-config.cli
+
+
+    # 3) customize base jboss / bpms runtime by executing bpms ha cli
+    $OPENSHIFT_JBOSSEAP_DIR/bin/tools/jboss-cli.sh --connect --controller=$OPENSHIFT_JBOSSEAP_IP:$OPENSHIFT_JBOSSEAP_MANAGEMENT_NATIVE_PORT -c --file=$OPENSHIFT_BPMSHA_DIR/filtered/bpmsha-project.cli
+
     
 }
 
