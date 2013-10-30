@@ -74,7 +74,7 @@ function start() {
     # no point in deploying ex server if database is not up
     if ! isdbup; then
         echo "Timed out waiting for database listener port"
-        exit 0
+        exit 1
     fi
 
     echo "mysql is up!  Starting $cartridge_type cart"
