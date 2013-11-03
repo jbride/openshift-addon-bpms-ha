@@ -110,6 +110,11 @@ function restart() {
       start
 }
 
+function isrunning() {
+    // TO-DO:  check if auditlog MDB deployment has occurred
+    return 0
+}
+
 function status() {
    if isrunning
    then
